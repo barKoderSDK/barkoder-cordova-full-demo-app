@@ -1,0 +1,55 @@
+{
+  "name": "barkoder_app_cordova",
+  "displayName": "Barkoder Cordova App",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Cordova + React port of BarkoderApp with Barkoder Cordova SDK integration.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "cordova:prepare": "cordova prepare",
+    "cordova:add:android": "cordova platform add android",
+    "cordova:add:ios": "cordova platform add ios",
+    "cordova:build:android": "npm run build && cordova build android",
+    "cordova:run:android": "npm run build && cordova run android",
+    "cordova:build:ios": "npm run build && cordova build ios"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^7.13.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "barkoder-cordova": "^1.6.8",
+    "cordova": "^13.0.0",
+    "cordova-android": "^15.0.0",
+    "cordova-plugin-camera": "^8.0.0",
+    "cordova-plugin-device": "^3.0.0",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.48.0",
+    "vite": "^7.3.1"
+  },
+  "cordova": {
+    "plugins": {
+      "barkoder-cordova-plugin": {},
+      "cordova-plugin-camera": {},
+      "cordova-plugin-device": {}
+    },
+    "platforms": [
+      "android"
+    ]
+  }
+}
