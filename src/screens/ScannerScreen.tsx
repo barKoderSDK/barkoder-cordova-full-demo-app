@@ -202,16 +202,22 @@ export default function ScannerScreen() {
       .map((item) => `"${item.text.replace(/"/g, '""')}","${item.type}"`)
       .join('\n');
     const csvContent = `${header}${rows}`;
+    const mailBody = `Hi,\n\nPlease find the scanned barcode CSV below:\n\n${csvContent}\n`;
+    const mailtoUrl = `mailto:?subject=${encodeURIComponent('Scanned barcodes CSV')}&body=${encodeURIComponent(mailBody)}`;
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'scanned_barcodes.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    if (isNativePlatform) {
+      try {
+        const opened = window.open(mailtoUrl, '_system');
+        if (!opened) {
+          window.location.href = mailtoUrl;
+        }
+      } catch {
+        window.location.href = mailtoUrl;
+      }
+      return;
+    }
+
+    window.location.href = mailtoUrl;
   };
 
   const handleResumeScanning = () => {

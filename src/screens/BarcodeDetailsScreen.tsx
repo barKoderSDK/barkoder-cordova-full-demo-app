@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import bgImage from '../assets/images/BG.svg';
 import chevron from '../assets/icons/chevron.svg';
@@ -36,29 +36,31 @@ export default function BarcodeDetailsScreen() {
   const item = state?.item;
   const returnToHome = Boolean(state?.returnToHome);
 
-  const handleBack = () => {
-    if (returnToHome) {
+  const handleBack = useCallback(() => {
+    if (returnToHome || window.history.length <= 1) {
       navigate('/', { replace: true });
       return;
     }
+
     navigate(-1);
-  };
+  }, [navigate, returnToHome]);
 
   useEffect(() => {
-    if (!returnToHome || !barkoderService.isNativePlatform) {
+    if (!barkoderService.isNativePlatform) {
       return;
     }
 
     const onBackButton = (event: Event) => {
       event.preventDefault();
-      navigate('/', { replace: true });
+      handleBack();
     };
+
     document.addEventListener('backbutton', onBackButton, false);
 
     return () => {
       document.removeEventListener('backbutton', onBackButton, false);
     };
-  }, [navigate, returnToHome]);
+  }, [handleBack]);
 
   const details = useMemo(() => {
     if (!item) {

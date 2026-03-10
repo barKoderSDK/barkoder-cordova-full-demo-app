@@ -12,7 +12,7 @@ const resultSubscribers = new Set<(result: BarkoderResult) => void>();
 const closeSubscribers = new Set<() => void>();
 
 const getLicenseKey = (): string => {
-  return import.meta.env.VITE_BARKODER_LICENSE_KEY ?? '';
+  return (import.meta.env.VITE_BARKODER_LICENSE_KEY ?? '').trim();
 };
 
 const waitForDeviceReady = async (): Promise<void> => {
@@ -117,6 +117,12 @@ const ensureRegistered = async (): Promise<void> => {
   }
 
   const licenseKey = getLicenseKey();
+  if (!licenseKey) {
+    throw new Error(
+      'Missing VITE_BARKODER_LICENSE_KEY at build time. Rebuild with `npm run build` and sync with `npm run cordova:prepare`.',
+    );
+  }
+
   await Barkoder.registerWithLicenseKey({ licenseKey });
   registered = true;
 };

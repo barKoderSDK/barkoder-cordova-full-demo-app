@@ -794,6 +794,75 @@
   border-bottom: 0;
 }
 
+.setting-dropdown {
+  background: #fff;
+}
+
+.setting-dropdown-open .setting-dropdown-trigger {
+  border-bottom: 0;
+}
+
+.setting-dropdown-trigger {
+  width: 100%;
+  text-align: left;
+  background: #fff;
+}
+
+.setting-dropdown-value-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #666;
+}
+
+.setting-dropdown-value {
+  color: #666;
+}
+
+.setting-dropdown-chevron {
+  display: inline-flex;
+  transition: transform 0.16s ease;
+  color: #888;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.setting-dropdown-chevron-open {
+  transform: rotate(90deg);
+}
+
+.setting-dropdown-options {
+  background: #f9f9f9;
+  border-top: 1px solid #eee;
+}
+
+.setting-dropdown-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 10px 32px;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+  color: #666;
+  background: #f9f9f9;
+  text-align: left;
+}
+
+.setting-dropdown-option-last {
+  border-bottom: 0;
+}
+
+.setting-dropdown-option-text-selected {
+  color: #e52e4c;
+  font-weight: 700;
+}
+
+.setting-dropdown-check {
+  color: #e52e4c;
+  font-weight: 700;
+}
+
 .setting-row input[type='checkbox'] {
   width: 42px;
   height: 22px;

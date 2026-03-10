@@ -27,7 +27,7 @@ import type { ScannedItem, ScannerSettings } from '../types/types';
 import { mapGalleryResultToItems, toDataUrl } from '../utils/galleryResultUtils';
 
 const ALL_TYPES = [...BARCODE_TYPES_1D, ...BARCODE_TYPES_2D];
-const VIN_OCR_CUSTOM_OPTION_TIMEOUT_MS = 250;
+const VIN_OCR_CUSTOM_OPTION_TIMEOUT_MS = 2000;
 const getConfigurableTypesForMode = (scannerMode: string) => {
   if (scannerMode === MODES.MRZ) {
     return ALL_TYPES.filter((barcodeType) => barcodeType.id === 'idDocument');
@@ -91,36 +91,58 @@ export const useScannerLogic = (mode: string) => {
   }, []);
 
   const setVinOcrCustomOption = useCallback(async (enabled: boolean): Promise<void> => {
-    const resultPromise = Barkoder.setCustomOption({
-      option: 'enable_ocr_functionality',
-      value: enabled ? 1 : 0,
-    })
-      .then(() => ({ status: 'resolved' as const }))
-      .catch((error) => ({ status: 'rejected' as const, error }));
+    await new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const timeoutId = window.setTimeout(() => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        console.warn('[ScannerFlow] VIN OCR custom option timed out, continuing startup without blocking UI.', {
+          enabled,
+        });
+        resolve();
+      }, VIN_OCR_CUSTOM_OPTION_TIMEOUT_MS);
 
-    let timeoutId: number | undefined;
-    const timeoutPromise = new Promise<{ status: 'timeout' }>((resolve) => {
-      timeoutId = window.setTimeout(() => resolve({ status: 'timeout' }), VIN_OCR_CUSTOM_OPTION_TIMEOUT_MS);
+      void Barkoder.setCustomOption({
+        option: 'enable_ocr_functionality',
+        value: enabled ? 1 : 0,
+      })
+        .then(() => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          window.clearTimeout(timeoutId);
+          resolve();
+        })
+        .catch((error) => {
+          if (settled) {
+            console.warn('[ScannerFlow] VIN OCR custom option failed after timeout.', { enabled, error });
+            return;
+          }
+          settled = true;
+          window.clearTimeout(timeoutId);
+          reject(error);
+        });
     });
-
-    const outcome = await Promise.race([resultPromise, timeoutPromise]);
-    if (timeoutId !== undefined) {
-      window.clearTimeout(timeoutId);
-    }
-
-    if (outcome.status === 'rejected') {
-      throw outcome.error;
-    }
-
-    if (outcome.status === 'timeout') {
-      console.warn('[ScannerFlow] VIN OCR custom option timed out, continuing startup.', {
-        enabled,
-      });
-    }
   }, []);
 
   const applyDecoderConfig = useCallback(async (types: Record<string, boolean>): Promise<void> => {
-    const normalizedTypes = normalizeEnabledTypesForMode(mode, types);
+    const normalizedTypes = { ...normalizeEnabledTypesForMode(mode, types) };
+
+    if (mode === MODES.VIN) {
+      try {
+        if (normalizedTypes.ocrText) {
+          await setVinOcrCustomOption(true);
+        } else {
+          await setVinOcrCustomOption(false);
+        }
+      } catch (error) {
+        console.warn('VIN OCR custom option failed before decoder config. Continuing with current VIN setup.', error);
+      }
+    }
+
     const decoderConfig: Record<string, unknown> = {};
     const configurableTypes = getConfigurableTypesForMode(mode).filter(
       (barcodeType) => !(mode === MODES.VIN && barcodeType.id === 'ocrText' && !normalizedTypes.ocrText),
@@ -140,12 +162,12 @@ export const useScannerLogic = (mode: string) => {
         locationInImageResultEnabled: true,
         pinchToZoomEnabled: settingsRef.current.pinchToZoom,
         locationInPreviewEnabled: settingsRef.current.locationInPreview,
-        regionOfInterestVisible: settingsRef.current.regionOfInterest,
+        regionOfInterestVisible: mode === MODES.VIN ? true : settingsRef.current.regionOfInterest,
         beepOnSuccessEnabled: settingsRef.current.beepOnSuccess,
         vibrateOnSuccessEnabled: settingsRef.current.vibrateOnSuccess,
       }),
     });
-  }, [mode]);
+  }, [mode, setVinOcrCustomOption]);
 
   const applyModeConfig = useCallback(async (): Promise<void> => {
     await Barkoder.setEnableComposite({
@@ -172,25 +194,31 @@ export const useScannerLogic = (mode: string) => {
       await Barkoder.setMulticodeCachingDuration({ value: 3000 });
       await Barkoder.setMulticodeCachingEnabled({ enabled: true });
     } else if (mode === MODES.VIN) {
+      const shouldEnableOcr = Boolean(enabledTypes.ocrText);
       try {
-        await Barkoder.setBarcodeTypeEnabled({
-          type: BarcodeType.ocrText,
-          enabled: enabledTypes.ocrText,
-        });
-        await setVinOcrCustomOption(enabledTypes.ocrText);
+        await setVinOcrCustomOption(shouldEnableOcr);
       } catch (error) {
-        if (enabledTypes.ocrText) {
-          console.warn('VIN OCR could not be enabled. Continuing VIN barcode scan only.', error);
+        if (shouldEnableOcr) {
+          console.warn('VIN OCR custom option could not be enabled. Continuing with OCR symbology enabled.', error);
         } else {
-          console.warn('VIN OCR could not be disabled cleanly.', error);
+          console.warn('VIN OCR custom option could not be disabled cleanly.', error);
         }
       }
+      await Barkoder.setBarcodeTypeEnabled({ type: BarcodeType.ocrText, enabled: shouldEnableOcr });
+      await Barkoder.setBarcodeTypeEnabled({ type: BarcodeType.code39, enabled: enabledTypes.code39 });
+      await Barkoder.setBarcodeTypeEnabled({ type: BarcodeType.code128, enabled: enabledTypes.code128 });
+      await Barkoder.setBarcodeTypeEnabled({ type: BarcodeType.datamatrix, enabled: enabledTypes.datamatrix });
+      await Barkoder.setBarcodeTypeEnabled({ type: BarcodeType.qr, enabled: enabledTypes.qr });
       await Barkoder.setEnableVINRestrictions({ value: true });
       await Barkoder.setRegionOfInterest({ left: 0, top: 35, width: 100, height: 30 });
+      await Barkoder.setRegionOfInterestVisible({ value: true });
     } else if (mode === MODES.DPM) {
       await Barkoder.setBarcodeTypeEnabled({ type: BarcodeType.datamatrix, enabled: true });
       await Barkoder.setDatamatrixDpmModeEnabled({ enabled: true });
       await Barkoder.setRegionOfInterest({ left: 40, top: 40, width: 20, height: 10 });
+    } else if (mode === MODES.MRZ) {
+      await Barkoder.setRegionOfInterestVisible({ value: true });
+      await Barkoder.setRegionOfInterest({ left: 13, top: 39, width: 74, height: 22 });
     } else if (mode === MODES.AR_MODE) {
       await Barkoder.setARMode({ value: BarkoderARMode.interactiveEnabled });
       await Barkoder.setARSelectedLocationColor({ value: '#00FF00' });
@@ -200,7 +228,7 @@ export const useScannerLogic = (mode: string) => {
       await Barkoder.setBarcodeTypeEnabled({ type: BarcodeType.dotcode, enabled: true });
       await Barkoder.setRegionOfInterest({ left: 30, top: 40, width: 40, height: 9 });
     }
-  }, [enabledTypes.ocrText, mode, setVinOcrCustomOption]);
+  }, [enabledTypes, mode, setVinOcrCustomOption]);
 
   const scanImagePressed = useCallback(async (): Promise<void> => {
     if (!barkoderService.isNativePlatform) {
@@ -354,15 +382,16 @@ export const useScannerLogic = (mode: string) => {
       if (typeId === 'ocrText' && mode === MODES.VIN) {
         if (!enabled) {
           await setVinOcrCustomOption(false);
+          await Barkoder.setBarcodeTypeEnabled({ type: BarcodeType.ocrText, enabled: false });
           return;
         }
 
         try {
-          await Barkoder.setBarcodeTypeEnabled({ type: BarcodeType.ocrText, enabled: true });
           await setVinOcrCustomOption(true);
         } catch (error) {
           console.warn('VIN OCR could not be enabled from settings.', error);
         }
+        await Barkoder.setBarcodeTypeEnabled({ type: BarcodeType.ocrText, enabled: true });
       }
     },
     [enabledTypes, mode, setVinOcrCustomOption, toggleBarcodeType],
@@ -379,18 +408,16 @@ export const useScannerLogic = (mode: string) => {
       if (category === '2D' && mode === MODES.VIN) {
         if (!nextEnabledTypes.ocrText) {
           await setVinOcrCustomOption(false);
+          await Barkoder.setBarcodeTypeEnabled({ type: BarcodeType.ocrText, enabled: false });
           return;
         }
 
         try {
-          await Barkoder.setBarcodeTypeEnabled({
-            type: BarcodeType.ocrText,
-            enabled: true,
-          });
           await setVinOcrCustomOption(true);
         } catch (error) {
           console.warn('VIN OCR could not be enabled from Enable All.', error);
         }
+        await Barkoder.setBarcodeTypeEnabled({ type: BarcodeType.ocrText, enabled: true });
       }
     },
     [enableAllBarcodeTypes, enabledTypes, mode, setVinOcrCustomOption],
@@ -450,7 +477,18 @@ export const useScannerLogic = (mode: string) => {
       }
 
       if (saved?.scannerSettings) {
-        setSettings({ ...getInitialSettings(mode), ...saved.scannerSettings });
+        const nextSettings = { ...getInitialSettings(mode), ...saved.scannerSettings };
+        if (mode === MODES.MRZ) {
+          nextSettings.regionOfInterest = true;
+        }
+        if (mode === MODES.VIN) {
+          nextSettings.regionOfInterest = true;
+        }
+        setSettings(nextSettings);
+      } else if (mode === MODES.MRZ) {
+        setSettings((currentSettings) => ({ ...currentSettings, regionOfInterest: true }));
+      } else if (mode === MODES.VIN) {
+        setSettings((currentSettings) => ({ ...currentSettings, regionOfInterest: true }));
       }
 
       setIsSettingsHydrated(true);

@@ -3,6 +3,30 @@ import { Barkoder } from '../plugins/barkoder';
 import { MODES } from '../constants/constants';
 import type { ScannerSettings } from '../types/types';
 
+const applyModeRegionOfInterest = async (mode: string): Promise<void> => {
+  if (mode === MODES.VIN) {
+    await Barkoder.setRegionOfInterest({ left: 0, top: 35, width: 100, height: 30 });
+    return;
+  }
+
+  if (mode === MODES.DPM) {
+    await Barkoder.setRegionOfInterest({ left: 40, top: 40, width: 20, height: 10 });
+    return;
+  }
+
+  if (mode === MODES.DOTCODE) {
+    await Barkoder.setRegionOfInterest({ left: 30, top: 40, width: 40, height: 9 });
+    return;
+  }
+
+  if (mode === MODES.MRZ) {
+    await Barkoder.setRegionOfInterest({ left: 13, top: 39, width: 74, height: 22 });
+    return;
+  }
+
+  await Barkoder.setRegionOfInterest({ left: 5, top: 5, width: 90, height: 90 });
+};
+
 export const useBarkoderSettings = (mode: string, startScanning: () => Promise<void>) => {
   const applySettings = useCallback(
     async (settings: ScannerSettings): Promise<void> => {
@@ -10,13 +34,14 @@ export const useBarkoderSettings = (mode: string, startScanning: () => Promise<v
       await Barkoder.setBarcodeThumbnailOnResultEnabled({ enabled: true });
 
       const compositeEnabled = mode === MODES.ANYSCAN ? settings.compositeMode : false;
+      const roiVisible = mode === MODES.MRZ || mode === MODES.VIN ? true : settings.regionOfInterest;
       await Barkoder.setEnableComposite({ value: compositeEnabled ? 1 : 0 });
       await Barkoder.setPinchToZoomEnabled({ enabled: settings.pinchToZoom });
       await Barkoder.setLocationInPreviewEnabled({ enabled: settings.locationInPreview });
-      await Barkoder.setRegionOfInterestVisible({ value: settings.regionOfInterest });
+      await Barkoder.setRegionOfInterestVisible({ value: roiVisible });
 
-      if (settings.regionOfInterest && mode !== MODES.VIN && mode !== MODES.DPM) {
-        await Barkoder.setRegionOfInterest({ left: 5, top: 5, width: 90, height: 90 });
+      if (roiVisible) {
+        await applyModeRegionOfInterest(mode);
       }
 
       await Barkoder.setBeepOnSuccessEnabled({ enabled: settings.beepOnSuccess });
@@ -78,9 +103,14 @@ export const useBarkoderSettings = (mode: string, startScanning: () => Promise<v
           await Barkoder.setLocationInPreviewEnabled({ enabled: value as boolean });
           break;
         case 'regionOfInterest':
+          if (mode === MODES.MRZ || mode === MODES.VIN) {
+            await Barkoder.setRegionOfInterestVisible({ value: true });
+            await applyModeRegionOfInterest(mode);
+            break;
+          }
           await Barkoder.setRegionOfInterestVisible({ value: value as boolean });
-          if (value && mode !== MODES.VIN && mode !== MODES.DPM) {
-            await Barkoder.setRegionOfInterest({ left: 5, top: 5, width: 90, height: 90 });
+          if (value) {
+            await applyModeRegionOfInterest(mode);
           }
           break;
         case 'beepOnSuccess':

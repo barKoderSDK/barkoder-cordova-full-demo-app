@@ -10,5 +10,9 @@
     <content src="index.html" />
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
+    <allow-intent href="mailto:*" />
     <allow-navigation href="*" />
+    <platform name="android">
+        <framework src="com.google.mlkit:text-recognition:16.0.1" />
+    </platform>
 </widget>

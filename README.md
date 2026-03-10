@@ -42,6 +42,11 @@ Set:
 VITE_BARKODER_LICENSE_KEY=YOUR_BARKODER_LICENSE_KEY
 ```
 
+Important:
+- After changing `.env`, run a fresh build and sync: `npm run build && npm run cordova:prepare`.
+- If you run from Android Studio using `platforms/android`, you must run `cordova prepare` (or `npm run cordova:build:android`) first so updated web assets are copied.
+- The license key must be valid for this app id: `com.barkoder.demo` (from `config.xml`).
+
 3. Build web bundle into Cordova `www`:
 
 ```bash
@@ -74,4 +79,3 @@ npm run cordova:run:android
 - https://barkoder.com/docs/v1/cordova/cordova-installation
 - https://barkoder.com/docs/v1/cordova/cordova-sdk-api-reference
 - https://barkoder.com/docs/v1/cordova/cordova-examples
-

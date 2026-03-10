@@ -135,6 +135,10 @@ export const getInitialSettings = (mode: string): ScannerSettings => {
           decodingSpeed: DecodingSpeed.slow,
           continuousScanning: false,
         };
+      case MODES.MRZ:
+        return {
+          regionOfInterest: true,
+        };
       case MODES.DEBLUR:
         return {
           scanBlurred: true,
