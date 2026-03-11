@@ -48,7 +48,7 @@ export const useBarkoderSettings = (mode: string, startScanning: () => Promise<v
       await Barkoder.setVibrateOnSuccessEnabled({ enabled: settings.vibrateOnSuccess });
       await Barkoder.setUpcEanDeblurEnabled({ enabled: settings.scanBlurred });
       await Barkoder.setMisshaped1DEnabled({ enabled: settings.scanDeformed });
-      await Barkoder.setCloseSessionOnResultEnabled({ enabled: !settings.continuousScanning });
+      await Barkoder.setCloseSessionOnResultEnabled({ enabled: false });
       await Barkoder.setDecodingSpeed({ value: settings.decodingSpeed });
       await Barkoder.setBarkoderResolution({ value: settings.resolution });
 
@@ -84,8 +84,8 @@ export const useBarkoderSettings = (mode: string, startScanning: () => Promise<v
     ): Promise<ScannerSettings> => {
       const nextSettings = { ...currentSettings, [key]: value } as ScannerSettings;
       const refreshScanner = async (): Promise<void> => {
-        const stopOp = Barkoder.stopScanning();
-        await stopOp;
+        const pauseOp = Barkoder.pauseScanning();
+        await pauseOp;
         const startOp = startScanning();
         await startOp;
       };
@@ -126,7 +126,7 @@ export const useBarkoderSettings = (mode: string, startScanning: () => Promise<v
           await Barkoder.setMisshaped1DEnabled({ enabled: value as boolean });
           break;
         case 'continuousScanning':
-          await Barkoder.setCloseSessionOnResultEnabled({ enabled: !(value as boolean) });
+          await Barkoder.setCloseSessionOnResultEnabled({ enabled: false });
           clearPauseState();
           await refreshScanner();
           break;

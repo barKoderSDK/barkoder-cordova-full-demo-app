@@ -15,7 +15,7 @@ const readFileAsBase64 = (file: File): Promise<string> =>
         reject(new Error('Could not read selected image.'));
         return;
       }
-      resolve(base64);
+      resolve(base64.replace(/\s/g, ''));
     };
     reader.onerror = () => {
       reject(new Error('Failed to read selected image.'));
@@ -61,11 +61,15 @@ export const pickGalleryImageAsBase64 = async (): Promise<string | null> => {
     return new Promise<string | null>((resolve, reject) => {
       camera.getPicture(
         (imageData: string) => {
-          if (!imageData) {
+          const normalizedBase64 = String(imageData ?? '')
+            .replace(/^data:[^;]+;base64,/, '')
+            .replace(/\s/g, '');
+
+          if (!normalizedBase64) {
             resolve(null);
             return;
           }
-          resolve(imageData);
+          resolve(normalizedBase64);
         },
         (message: string) => {
           if (!message || isCancelledCameraMessage(message)) {

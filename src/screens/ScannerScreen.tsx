@@ -262,7 +262,7 @@ export default function ScannerScreen() {
               transparent
               onMenuPress={() => {
                 if (scannerReadyRef.current) {
-                  Barkoder.stopScanning().catch(() => undefined);
+                  Barkoder.pauseScanning().catch(() => undefined);
                 }
                 setActiveButton('settings');
               }}

@@ -349,14 +349,29 @@ export const Barkoder = {
     return new Promise<void>((resolve, reject) => {
       try {
         const plugin = getPlugin();
+        let settled = false;
         plugin.scanImage(
           base64,
           (payload: unknown) => {
             emitResultEvent(payload);
-            resolve();
+            if (!settled) {
+              settled = true;
+              resolve();
+            }
           },
-          (error: unknown) => reject(normalizeError(error)),
+          (error: unknown) => {
+            if (!settled) {
+              settled = true;
+              reject(normalizeError(error));
+            } else {
+              console.error('Barkoder image scanning error', error);
+            }
+          },
         );
+        if (!settled) {
+          settled = true;
+          resolveSoon(resolve);
+        }
       } catch (error) {
         reject(normalizeError(error));
       }

@@ -177,7 +177,7 @@ export const useScannerLogic = (mode: string) => {
     await Barkoder.setMisshaped1DEnabled({ enabled: settingsRef.current.scanDeformed });
     await Barkoder.setDecodingSpeed({ value: settingsRef.current.decodingSpeed });
     await Barkoder.setBarkoderResolution({ value: settingsRef.current.resolution });
-    await Barkoder.setCloseSessionOnResultEnabled({ enabled: !settingsRef.current.continuousScanning });
+    await Barkoder.setCloseSessionOnResultEnabled({ enabled: false });
     await Barkoder.setBarcodeThumbnailOnResultEnabled({ enabled: true });
     await Barkoder.setMaximumResultsCount({ value: 200 });
 
