@@ -1,13 +1,12 @@
 # barkoder_app_cordova
 
-Cordova + React port of `BarkoderApp` (React Native), using the official Barkoder Cordova SDK.
+Cordova + React, using the official Barkoder Cordova SDK.
 
 ## Included app flows
 
 - Home modes grid (1D, 2D, Continuous, MultiScan, VIN, DPM, DeBlur, DotCode, AR, MRZ, Gallery)
 - Native scanner screen with:
   - flash/zoom/camera toggles
-  - pause-on-result behavior
   - bottom result sheet (copy / CSV / details / expand)
   - full settings panel (general, decoding, barcode-type toggles)
 - Barcode details screen
@@ -66,13 +65,6 @@ npm run cordova:add:ios
 npm run cordova:build:android
 npm run cordova:run:android
 ```
-
-## Notes
-
-- `cordova.js` is loaded in `index.html` for native runtime.
-- Native Barkoder APIs are wrapped in `src/plugins/barkoder.ts` to provide a promise-based interface.
-- Settings/history are persisted in `localStorage`.
-- CSV export is implemented as file download from the scanner screen.
 
 ## References used
 
