@@ -26,3 +26,5 @@ node_modules/
 
 .env.example
 .env
+build.json
+release-key.jks
